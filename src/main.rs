@@ -1,5 +1,5 @@
 use eframe::egui;
-use egui::TextBuffer;
+use egui::{Button, Color32, Key, Label, Vec2};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -31,7 +31,10 @@ impl eframe::App for Aero {
 
         // let mut characters = "abcdefghijklmnopqrstuvwxyz1234567890";
         let mut qwerty = "qwertyuiopasdfghjklzxcvbnm";
-        let mut label_responses: Vec<egui::Response> = Vec::new();
+        let mut buttons: Vec<egui::Button> = Vec::new();
+        let chars: Vec<char> = qwerty.chars().collect();
+        let mut active_index: Option<usize> = None;
+
 
         egui::CentralPanel::default().show(ctx, |ui|{
             ui.label("Aero");
@@ -41,33 +44,39 @@ impl eframe::App for Aero {
             }
 
             egui::Grid::new("keys").show(ui, |ui|{
-                let chars: Vec<char> = qwerty.chars().collect();
                 let row_sizes = [10, 9, 7];
 
-                let mut index = 0;
-                for size in row_sizes {
-                    for ch in &chars[index..index + size] {
-                        let mut l = ui.label(ch.to_string());
-                        label_responses.push(l);
+                // detect pressed key
+                for (index, ch) in qwerty.chars().enumerate() {
+                    if ui.input(|i| {
+                        i.key_down(Key::from_name(&ch.to_string()).unwrap())
+                    }) {
+                        active_index = Some(index);
                     }
+                }
+                
+                // draw buttons
+                let mut index = 0;
+
+                for size in row_sizes {
+                    for i in 0..size {
+                        let ch = chars[index + i];
+
+                        let mut button = egui::Button::new(ch.to_string())
+                            .min_size(Vec2::new(60.0, 60.0));
+
+                        if Some(index + i) == active_index {
+                            button = button.fill(Color32::from_rgb(0, 0, 0));
+                        }
+                        ui.add(button);
+                    }
+
                     ui.end_row();
                     index += size;
                 }
             }); 
 
-            if ui.input(|i| i.key_pressed(egui::Key::A)) {
-                for l in label_responses {
-                    
-                }
-            }
-
-            /* 
-            for c in characters.chars() {
-                if ui.button(c.to_string()).clicked() {
-
-                }
-            }
-            */
+            // viewport stuff
             if self.show_settings_viewport {
                 egui::Window::new("settings").show(ctx, |ui| {
                     if ui.button("close").clicked() {
