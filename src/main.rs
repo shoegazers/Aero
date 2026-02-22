@@ -1,8 +1,9 @@
 use crate::words::generate_test;
 use eframe::egui;
 use egui::{Color32, Key, RichText, Vec2};
-use std::collections::HashSet;
+use std::{collections::HashSet, ops::Index};
 mod words;
+mod test;
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
@@ -17,6 +18,8 @@ struct Aero {
     show_settings_viewport: bool,
     test: words::Test,
     active_indices: HashSet<usize>,
+    pressed: HashSet<char>,
+    current_word: String,
 }
 
 impl Aero {
@@ -27,6 +30,8 @@ impl Aero {
             show_main_viewport: true,
             show_settings_viewport: false,
             active_indices: HashSet::new(),
+            pressed: HashSet::new(),
+            current_word: String::new(),
         }
     }
 }
@@ -38,6 +43,8 @@ impl Default for Aero {
             show_main_viewport: true,
             show_settings_viewport: false,
             active_indices: HashSet::new(),
+            pressed: HashSet::new(),
+            current_word: String::new(),
         }
     }
 }
@@ -45,10 +52,10 @@ impl Default for Aero {
 impl eframe::App for Aero {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // let mut characters = "abcdefghijklmnopqrstuvwxyz1234567890";
-        let mut qwerty = "qwertyuiopasdfghjklzxcvbnm";
-        let mut buttons: Vec<egui::Button> = Vec::new();
+        let qwerty = "qwertyuiopasdfghjklzxcvbnm";
+        let buttons: Vec<egui::Button> = Vec::new();
         let chars: Vec<char> = qwerty.chars().collect();
-        let mut active_index: Option<usize> = None;
+        let active_index: Option<usize> = None;
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.label("Aero");
@@ -60,7 +67,12 @@ impl eframe::App for Aero {
             // Generated Words
             egui::Grid::new("words").show(ui, |ui| {
                 for word in &self.test.words {
-                    ui.label(RichText::new(word).size(18.0).strong());
+                    if word == &self.current_word {
+                        test::test(ui, word, &self.pressed);
+                    } else {
+                        ui.label(RichText::new(word).size(18.0).strong());
+                    }
+                    
                 }
             });
 
@@ -103,6 +115,22 @@ impl eframe::App for Aero {
                     ui.end_row();
                     index += size;
                 }
+
+                // set current word
+                self.current_word = self.test.words.index(0).to_string();
+
+                // input reader
+                ctx.input(|i| {
+                    for event in &i.events {
+                        if let egui::Event::Text(text) = event {
+                            for ch in text.chars() {
+                                self.pressed.insert(ch.to_ascii_lowercase());
+                            }
+                        }
+                    }
+                });
+
+                
             });
 
             // viewport stuff
